@@ -89,9 +89,7 @@ function setup(shaders)
         const transformed_y = -(y * table_height)/canvas.height + table_height/2
         
         // Push the new vertex to the vertex array
-        //position.push(MV.vec2(transformed_x, transformed_y));
-
-        console.log(table_width/2, table_height/2, transformed_x, transformed_y);
+        position.push(MV.vec2(transformed_x, transformed_y));
         
         // Update charges array and replace them in the vertex shader
         update_charges();
