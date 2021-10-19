@@ -1,7 +1,7 @@
-
 #define TWOPI 6.28318530718
 
 const int MAX_CHARGES = 20;
+const float KE = 8.988e9;
 
 attribute vec3 vPosition;
 
@@ -9,6 +9,7 @@ uniform float table_width;
 uniform float table_height;
 
 uniform vec2 uPosition[MAX_CHARGES];
+uniform float chargeValue[MAX_CHARGES];
 
 varying vec4 glColor;
 
@@ -33,20 +34,34 @@ vec4 colorize(vec2 f)
     return vec4(angle_to_hue(a-TWOPI), 1.);
 }
 
-bool vecEquals(vec4 v1, vec4 v2) {
-    bvec4 e = equal(v1, v2);
-    for(int i=0; i<4; i++) {
-        if (e[i] == false)
-            return false;
-    }
-    return true;
-}
-
 void main()
 {
     if (vPosition.z == 1.0) { // Moveable
+
+        vec2 final = vec2(0.0, 0.0);
+        for (int j=0; j<MAX_CHARGES; j++) {
+            if (uPosition[j] == vec2(0.0, 0.0))
+                continue;
+            vec2 charge_position = uPosition[j];
+
+            vec2 vector = vec2(vPosition) - charge_position;
+
+            float norma = sqrt(vector.x*vector.x + vector.y*vector.y);    
+            
+            vec2 unit_vector = (1.0/norma) * vector;
+
+            vec2 electric_field = unit_vector * (KE * 0.000000000001)/(norma*norma);
+
+            final += vec2(electric_field.x, electric_field.y);
+        }
+
+        float f = sqrt(final.x*final.x + final.y*final.y);
+        if (f > 0.25) {
+            final = final * 0.25/f;
+        }
+            
         glColor = vec4(1.0, 0.0, 0.0, 1.0);
-        gl_Position = (vec4(vPosition.x, vPosition.y, 0.0, 1.0) + vec4(0.02, 0.03, 0.0, 0.0)) / vec4(table_width, table_height, 1.0, 1.0);
+        gl_Position = vec4(vPosition.x + final.x, vPosition.y + final.y, 0.0, 1.0) / vec4(table_width, table_height, 1.0, 1.0);
     } else {
         glColor = vec4(0.0, 1.0, 0.0, 1.0);
         gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0) / vec4(table_width, table_height, 1.0, 1.0);

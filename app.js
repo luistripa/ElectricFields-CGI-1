@@ -62,6 +62,9 @@ function setup(shaders)
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+    //position.push(MV.vec2(0.0, 0.0))
+    update_charges();
     
     window.requestAnimationFrame(animate);
 
