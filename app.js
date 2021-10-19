@@ -62,9 +62,6 @@ function setup(shaders)
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-    //position.push(MV.vec2(0.0, 0.0))
-    update_charges();
     
     window.requestAnimationFrame(animate);
 
@@ -91,11 +88,13 @@ function setup(shaders)
         const transformed_x = (x * table_width)/canvas.width - table_width/2
         const transformed_y = -(y * table_height)/canvas.height + table_height/2
         
-        // Push the new vertex to the vertex array
-        position.push(MV.vec2(transformed_x, transformed_y));
+        if (position.length < MAX_CHARGES) {
+            // Push the new vertex to the vertex array
+            position.push(MV.vec2(transformed_x, transformed_y));
         
-        // Update charges array and replace them in the vertex shader
-        update_charges();
+            // Update charges array and replace them in the vertex shader
+            update_charges();
+        }
     });
 }
 
@@ -103,6 +102,9 @@ function setup(shaders)
  * Sends the vertex array to the vertex shader as uniform variables.
  */
 function update_charges() {
+    const numCharges = gl.getUniformLocation(program, "numCharges");
+    gl.uniform1i(numCharges, position.length);
+
     for (let i=0; i<MAX_CHARGES && i<position.length; i++) {
         const uPosition = gl.getUniformLocation(program, "uPosition["+i+"]");
         gl.uniform2fv(uPosition, MV.flatten(position[i]));

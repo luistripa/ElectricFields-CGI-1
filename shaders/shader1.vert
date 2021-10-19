@@ -8,6 +8,7 @@ attribute vec3 vPosition;
 uniform float table_width;
 uniform float table_height;
 
+uniform int numCharges;
 uniform vec2 uPosition[MAX_CHARGES];
 uniform float chargeValue[MAX_CHARGES];
 
@@ -40,8 +41,8 @@ void main()
 
         vec2 final = vec2(0.0, 0.0);
         for (int j=0; j<MAX_CHARGES; j++) {
-            if (uPosition[j] == vec2(0.0, 0.0))
-                continue;
+            if (j >= numCharges)
+                break;
             vec2 charge_position = uPosition[j];
 
             vec2 vector = vec2(vPosition) - charge_position;
@@ -60,10 +61,10 @@ void main()
             final = final * 0.25/f;
         }
             
-        glColor = vec4(1.0, 0.0, 0.0, 1.0);
+        glColor = colorize(vec2(final.x, final.y));
         gl_Position = vec4(vPosition.x + final.x, vPosition.y + final.y, 0.0, 1.0) / vec4(table_width, table_height, 1.0, 1.0);
     } else {
-        glColor = vec4(0.0, 1.0, 0.0, 1.0);
+        glColor = vec4(0.0, 0.0, 0.0, 1.0);
         gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0) / vec4(table_width, table_height, 1.0, 1.0);
     }
     gl_PointSize = 4.0;
