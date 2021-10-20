@@ -2,6 +2,8 @@ import * as UTILS from './libs/utils.js';
 import * as MV from './libs/MV.js'
 
 const MAX_CHARGES = 20;
+const CHARGE = 0.000000000001;
+const ANGULAR_VELOCITY = 0.01;
 
 /** @type {WebGLRenderingContext} */
 let gl;
@@ -13,6 +15,7 @@ let table_height;
 
 let vertices = [];
 let position = []; // Array que guarda as cargas elétricas
+let chargeValue = [];
 
 const grid_spacing = 0.05;
 
@@ -21,6 +24,8 @@ function animate(time)
     window.requestAnimationFrame(animate);
     
     gl.clear(gl.COLOR_BUFFER_BIT);
+
+    rotate_charges();
 
     gl.drawArrays(gl.LINES, 0, vertices.length);
 }
@@ -41,8 +46,10 @@ function setup(shaders)
 
     for (let x = -table_width/2.0+grid_spacing/2; x < table_width/2.0+grid_spacing/2; x+=grid_spacing) {
         for (let y=-table_height/2.0+grid_spacing/2; y < table_height/2.0+grid_spacing/2; y+=grid_spacing) {
-            vertices.push(MV.vec3(x, y, 1.0));
-            vertices.push(MV.vec3(x, y, 0.0));
+            let randomX = x + (Math.random() - 0.5) / 20;
+            let randomY = y + (Math.random() - 0.5) / 20;
+            vertices.push(MV.vec3(randomX, randomY, 1.0)); //Movivel
+            vertices.push(MV.vec3(randomX, randomY, 0.0)); 
         }
     }
 
@@ -91,7 +98,13 @@ function setup(shaders)
         if (position.length < MAX_CHARGES) {
             // Push the new vertex to the vertex array
             position.push(MV.vec2(transformed_x, transformed_y));
-        
+            if(event.shiftKey){
+                chargeValue.push(-CHARGE);
+            }
+            else{
+                chargeValue.push(CHARGE);
+            }
+
             // Update charges array and replace them in the vertex shader
             update_charges();
         }
@@ -105,10 +118,29 @@ function update_charges() {
     const numCharges = gl.getUniformLocation(program, "numCharges");
     gl.uniform1i(numCharges, position.length);
 
-    for (let i=0; i<MAX_CHARGES && i<position.length; i++) {
+    for (let i = 0; i < position.length; i++) {
         const uPosition = gl.getUniformLocation(program, "uPosition["+i+"]");
         gl.uniform2fv(uPosition, MV.flatten(position[i]));
+        const uChargeValue = gl.getUniformLocation(program, "uChargeValue["+i+"]");
+        gl.uniform1f(uChargeValue, chargeValue[i]);
     }
+}
+
+function rotate_charges(){
+    let positionUpdate = [];
+    for(let i = 0; i < position.length; i++){
+        let distance = Math.sqrt(Math.pow(position[i][0], 2) + Math.pow(position[i][1], 2)); //Distancia a origem
+        let alpha = Math.atan2(position[i][1], position[i][0]);
+        if(chargeValue[i] > 0){ //Ver isto (esta ao contrario do stor)!!!!
+            alpha += ANGULAR_VELOCITY;
+        }
+        else{
+            alpha -= ANGULAR_VELOCITY;
+        }
+        positionUpdate.push(MV.vec2(Math.cos(alpha)* distance, Math.sin(alpha) * distance));
+    }
+    position = positionUpdate;
+    update_charges();
 }
 
 UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag"]).then(s => setup(s));

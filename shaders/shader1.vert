@@ -10,7 +10,7 @@ uniform float table_height;
 
 uniform int numCharges;
 uniform vec2 uPosition[MAX_CHARGES];
-uniform float chargeValue[MAX_CHARGES];
+uniform float uChargeValue[MAX_CHARGES];
 
 varying vec4 glColor;
 
@@ -40,10 +40,10 @@ void main()
     if (vPosition.z == 1.0) { // Moveable
 
         vec2 final = vec2(0.0, 0.0);
-        for (int j=0; j<MAX_CHARGES; j++) {
-            if (j >= numCharges)
+        for (int i=0; i<MAX_CHARGES; i++) {
+            if (i >= numCharges)
                 break;
-            vec2 charge_position = uPosition[j];
+            vec2 charge_position = uPosition[i];
 
             vec2 vector = vec2(vPosition) - charge_position;
 
@@ -51,7 +51,7 @@ void main()
             
             vec2 unit_vector = (1.0/norma) * vector;
 
-            vec2 electric_field = unit_vector * (KE * 0.000000000001)/(norma*norma);
+            vec2 electric_field = unit_vector * (KE * uChargeValue[i])/(norma*norma);
 
             final += vec2(electric_field.x, electric_field.y);
         }
