@@ -8,7 +8,7 @@ const ANGULAR_VELOCITY = 0.01;
 /** @type {WebGLRenderingContext} */
 let gl;
 
-var program, canvas;
+var program1, program2, canvas;
 
 const table_width = 3.0;
 let table_height;
@@ -27,7 +27,11 @@ function animate(time)
 
     rotate_charges();
 
+    gl.useProgram(program1);
     gl.drawArrays(gl.LINES, 0, vertices.length);
+
+    gl.useProgram(program2);
+    gl.drawArrays(gl.POINTS, 0, position.length);
 }
 
 function setup(shaders)
@@ -40,9 +44,8 @@ function setup(shaders)
 
     gl = UTILS.setupWebGL(canvas);
 
-    program = UTILS.buildProgramFromSources(gl, shaders["shader1.vert"], shaders["shader1.frag"]);
-
-    gl.useProgram(program);
+    program1 = UTILS.buildProgramFromSources(gl, shaders["shader1.vert"], shaders["shader1.frag"]);
+    program2 = UTILS.buildProgramFromSources(gl, shaders["shader2.vert"], shaders["shader2.frag"]);
 
     for (let x = -table_width/2.0+grid_spacing/2; x < table_width/2.0+grid_spacing/2; x+=grid_spacing) {
         for (let y=-table_height/2.0+grid_spacing/2; y < table_height/2.0+grid_spacing/2; y+=grid_spacing) {
@@ -53,19 +56,44 @@ function setup(shaders)
         }
     }
 
+    /*
+    GRID DRAWING
+    */
+    gl.useProgram(program1);
     let aBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, MV.flatten(vertices), gl.STATIC_DRAW);
 
-    let vPosition = gl.getAttribLocation(program, 'vPosition');
+    let vPosition = gl.getAttribLocation(program1, 'vPosition');
     gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
-    
-    const t_width_position = gl.getUniformLocation(program, "table_width");
-    const t_height_position = gl.getUniformLocation(program, "table_height");
 
-    gl.uniform1f(t_width_position, table_width/2.0);
-    gl.uniform1f(t_height_position, table_height/2.0);
+    const t_width_position = gl.getUniformLocation(program1, "table_width");
+    const t_height_position = gl.getUniformLocation(program1, "table_height");
+    gl.uniform1f(t_width_position, table_width);
+    gl.uniform1f(t_height_position, table_height);
+
+    /*
+    CHARGES DRAWING
+    */
+    gl.useProgram(program2);
+    let bBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, MV.flatten(position.concat(chargeValue)), gl.STATIC_DRAW);
+    
+    vPosition = gl.getAttribLocation(program2, "vPosition");
+    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+
+    let vCharge = gl.getAttribLocation(program2, "vCharge");
+    gl.vertexAttribPointer(vCharge, 1, gl.FLOAT, false, 0, position.length*2*4);
+    gl.enableVertexAttribArray(vCharge);
+
+
+    t_width_position = gl.getUniformLocation(program2, "table_width");
+    t_height_position = gl.getUniformLocation(program2, "table_height");
+    gl.uniform1f(t_width_position, table_width);
+    gl.uniform1f(t_height_position, table_height);
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -77,11 +105,17 @@ function setup(shaders)
         canvas.height = window.innerHeight;
         table_height = table_width / (canvas.width / canvas.height);
         
-        const t_width_position = gl.getUniformLocation(program, "table_width");
-        const t_height_position = gl.getUniformLocation(program, "table_height");
-    
-        gl.uniform1f(t_width_position, table_width/2.0);
-        gl.uniform1f(t_height_position, table_height/2.0);
+        gl.useProgram(program1);
+        const t_width_position = gl.getUniformLocation(program1, "table_width");
+        const t_height_position = gl.getUniformLocation(program1, "table_height");
+        gl.uniform1f(t_width_position, table_width);
+        gl.uniform1f(t_height_position, table_height);
+        
+        gl.useProgram(program2);
+        t_width_position = gl.getUniformLocation(program2, "table_width");
+        t_height_position = gl.getUniformLocation(program2, "table_height");
+        gl.uniform1f(t_width_position, table_width);
+        gl.uniform1f(t_height_position, table_height);
     
         gl.viewport(0, 0, canvas.width, canvas.height);
     })
@@ -115,15 +149,19 @@ function setup(shaders)
  * Sends the vertex array to the vertex shader as uniform variables.
  */
 function update_charges() {
-    const numCharges = gl.getUniformLocation(program, "numCharges");
+    const numCharges = gl.getUniformLocation(program1, "numCharges");
     gl.uniform1i(numCharges, position.length);
 
+    gl.useProgram(program1);
     for (let i = 0; i < position.length; i++) {
-        const uPosition = gl.getUniformLocation(program, "uPosition["+i+"]");
+        const uPosition = gl.getUniformLocation(program1, "uPosition["+i+"]");
         gl.uniform2fv(uPosition, MV.flatten(position[i]));
-        const uChargeValue = gl.getUniformLocation(program, "uChargeValue["+i+"]");
+        const uChargeValue = gl.getUniformLocation(program1, "uChargeValue["+i+"]");
         gl.uniform1f(uChargeValue, chargeValue[i]);
     }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, bBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, MV.flatten(position.concat(chargeValue)), gl.STATIC_DRAW);
 }
 
 function rotate_charges(){
@@ -143,4 +181,4 @@ function rotate_charges(){
     update_charges();
 }
 
-UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag"]).then(s => setup(s));
+UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag", "shader2.vert", "shader2.frag"]).then(s => setup(s));
