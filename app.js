@@ -2,7 +2,7 @@ import * as UTILS from './libs/utils.js';
 import * as MV from './libs/MV.js'
 
 const MAX_CHARGES = 20;
-const CHARGE = 0.000000000001;
+const CHARGE = 0.000000000004;
 const ANGULAR_VELOCITY = 0.01;
 
 /** @type {WebGLRenderingContext} */
