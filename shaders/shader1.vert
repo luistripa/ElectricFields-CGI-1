@@ -22,21 +22,18 @@ vec3 angle_to_hue(float angle) {
   return clamp((abs(fract(angle+vec3(3.0, 2.0, 1.0)/3.0)*6.0-3.0)-1.0), 0.0, 1.0);
 }
 
-vec3 hsv2rgb(vec3 c)
-{
+vec3 hsv2rgb(vec3 c) {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-vec4 colorize(vec2 f)
-{
+vec4 colorize(vec2 f){
     float a = atan(f.y, f.x);
     return vec4(angle_to_hue(a-TWOPI), 1.);
 }
 
-void main()
-{
+void main() {
     if (vPosition.z == 1.0) { // Moveable
 
         vec2 final = vec2(0.0, 0.0);
@@ -56,16 +53,16 @@ void main()
             final += vec2(electric_field.x, electric_field.y);
         }
 
-        float f = sqrt(final.x*final.x + final.y*final.y);
-        if (f > 0.25) {
-            final = final * 0.25/f;
+        float normaFinal = sqrt(final.x*final.x + final.y*final.y);
+        if (normaFinal > 0.25) {
+            final = final * 0.25/normaFinal;
         }
             
         glColor = colorize(vec2(final.x, final.y));
-        gl_Position = vec4(vPosition.x + final.x, vPosition.y + final.y, 0.0, 1.0) / vec4(table_width, table_height, 1.0, 1.0);
+        gl_Position = vec4(vPosition.x + final.x, vPosition.y + final.y, 0.0, 1.0) / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
     } else {
         glColor = vec4(0.0, 0.0, 0.0, 1.0);
-        gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0) / vec4(table_width, table_height, 1.0, 1.0);
+        gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0) / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
     }
     gl_PointSize = 4.0;
     
