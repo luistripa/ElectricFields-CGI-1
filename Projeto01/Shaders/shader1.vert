@@ -44,7 +44,7 @@ void main() {
 
             vec2 vector = vec2(vPosition) - charge_position; // A vector pointing from the charge to the point
 
-            float modulus = sqrt(vector.x*vector.x + vector.y*vector.y); // The modulus of the vector from above
+            float modulus = length(vector); // The modulus of the vector from above
             
             vec2 unit_vector = (1.0/modulus) * vector; // The unit vector from the vector 'vector'
 
@@ -55,7 +55,7 @@ void main() {
             final_electric_field += vec2(electric_field.x, electric_field.y);
         }
 
-        float final_modulus = sqrt(pow(final_electric_field.x, 2.0) + pow(final_electric_field.y, 2.0));
+        float final_modulus = length(final_electric_field);
         if (final_modulus > MAX_VECTOR_SIZE) {
             // the maximum modulus of the vector should be 5 grid squares (0.25 for 0.05 grid_spacing)
             final_electric_field = final_electric_field * MAX_VECTOR_SIZE/final_modulus;

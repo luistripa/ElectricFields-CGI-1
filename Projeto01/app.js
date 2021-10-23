@@ -1,5 +1,5 @@
-import * as UTILS from './libs/utils.js';
-import * as MV from './libs/MV.js'
+import * as UTILS from '../libs/utils.js';
+import * as MV from '../libs/MV.js'
 
 const MAX_CHARGES = 20;
 const CHARGE = 0.000000000004;
