@@ -3,6 +3,7 @@ precision highp float;
 varying float charge;
 
 void main() {
+    // Distance to between the point and the center of the charge
     float distance = sqrt(pow(gl_PointCoord.x - 0.5, 2.0) + pow(gl_PointCoord.y - 0.5, 2.0));
 
     if (distance <=0.5) { // Used to create the round shape
@@ -28,6 +29,4 @@ void main() {
     } else {
         discard;
     }
-    
-    
 }

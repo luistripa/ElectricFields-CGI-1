@@ -1,9 +1,10 @@
 #define TWOPI 6.28318530718
+#define KE 8.988e9
 
+const float MAX_VECTOR_SIZE = 0.25;
 const int MAX_CHARGES = 20;
-const float KE = 8.988e9;
 
-attribute vec3 vPosition;
+attribute vec4 vPosition;
 
 uniform float table_width;
 uniform float table_height;
@@ -37,26 +38,27 @@ void main() {
     if (vPosition.z == 1.0) { // Moveable
         vec2 final_electric_field = vec2(0.0, 0.0);
         for (int i=0; i<MAX_CHARGES; i++) {
-            if (i >= numCharges) // Don't draw charges if they have exceeded the number of max charges
+            if (i >= numCharges) // Don't draw more charges if they have exceeded the total number of charges.
                 break;
             vec2 charge_position = uPosition[i];
 
             vec2 vector = vec2(vPosition) - charge_position; // A vector pointing from the charge to the point
 
-            float modulo = sqrt(vector.x*vector.x + vector.y*vector.y); // The modulo of the vector from above
+            float modulus = sqrt(vector.x*vector.x + vector.y*vector.y); // The modulus of the vector from above
             
-            vec2 unit_vector = (1.0/modulo) * vector; // The unit vector from the vector 'vector'
+            vec2 unit_vector = (1.0/modulus) * vector; // The unit vector from the vector 'vector'
 
             // Calculates the electical field as a vector using the above unit vector and the electric field expression
-            vec2 electric_field = unit_vector * (KE * uChargeValue[i])/(pow(modulo, 2.0)); 
+            vec2 electric_field = unit_vector * (KE * uChargeValue[i])/(pow(modulus, 2.0)); 
 
             // Adds the electric field vector to the final electric field vector
             final_electric_field += vec2(electric_field.x, electric_field.y);
         }
 
-        float final_modulo = sqrt(pow(final_electric_field.x, 2.0) + pow(final_electric_field.y, 2.0));
-        if (final_modulo > 0.25) {
-            final_electric_field = final_electric_field * 0.25/final_modulo;
+        float final_modulus = sqrt(pow(final_electric_field.x, 2.0) + pow(final_electric_field.y, 2.0));
+        if (final_modulus > MAX_VECTOR_SIZE) {
+            // the maximum modulus of the vector should be 5 grid squares (0.25 for 0.05 grid_spacing)
+            final_electric_field = final_electric_field * MAX_VECTOR_SIZE/final_modulus;
         }
             
         glColor = colorize(final_electric_field);
@@ -64,8 +66,6 @@ void main() {
     
     } else { // Fixed 
         glColor = vec4(0.0, 0.0, 0.0, 1.0);
-        gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0) / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
+        gl_Position = vPosition / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
     }
-    gl_PointSize = 4.0;
-    
 }

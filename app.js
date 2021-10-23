@@ -17,20 +17,15 @@ let aBuffer, bBuffer;
 const table_width = 3.0;
 let table_height;
 
+const grid_spacing = 0.05;
+
 let vertices = [];
 let position = []; // Array that holds all the charges
-let chargeValue = []; // Arrays that holds the values of the charges contained in position in the same order
+let chargeValues = [];
 
 let drawCharges = true; // Boolean value to indicate if the charge's stylization should be drawn.
 
-const grid_spacing = 0.05; // The space between each point in the grid
 
-/*
-Called every refresh cycle.
-
-Draws the entire grid and electric fields.
-If drawCharges is true, it also draws a stylized visualization of the charges.
-*/
 function animate(time) {
     window.requestAnimationFrame(animate);
     
@@ -47,9 +42,7 @@ function animate(time) {
     }
 }
 
-/*
-Sets up the entire environment.
-*/
+
 function setup(shaders) {
     canvas = document.getElementById("gl-canvas");
     canvas.width = window.innerWidth;
@@ -62,6 +55,7 @@ function setup(shaders) {
     program1 = UTILS.buildProgramFromSources(gl, shaders["shader1.vert"], shaders["shader1.frag"]);
     program2 = UTILS.buildProgramFromSources(gl, shaders["shader2.vert"], shaders["shader2.frag"]);
 
+    // Grid spacing is added to avoid points at the edge of the canvas on the left side.
     for (let x = -table_width/2.0+grid_spacing/2; x < table_width/2.0+grid_spacing/2; x+=grid_spacing) {
         for (let y=-table_height/2.0+grid_spacing/2; y < table_height/2.0+grid_spacing/2; y+=grid_spacing) {
             // Adds "noise" to the points to avoid a perfect grid
@@ -96,6 +90,9 @@ function setup(shaders) {
     
     window.requestAnimationFrame(animate);
 
+    /*
+    Resizes the canvas when the browser window is resized.
+    */
     window.addEventListener("resize", function (event) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -107,6 +104,12 @@ function setup(shaders) {
         gl.viewport(0, 0, canvas.width, canvas.height);
     });
     
+    /*
+    Adds a new charge when a click event is received.
+
+    If normal click, draw a positive charge.
+    If shift-click, draw a negative charge.
+    */
     window.addEventListener("click", function(event) {
         // Start by getting x and y coordinates inside the canvas element
         const x = event.offsetX;
@@ -120,10 +123,10 @@ function setup(shaders) {
             // Push the new charge position into the charges array
             position.push(MV.vec2(transformed_x, transformed_y));
             if(event.shiftKey){
-                chargeValue.push(-CHARGE);
+                chargeValues.push(-CHARGE);
             }
             else{
-                chargeValue.push(CHARGE);
+                chargeValues.push(CHARGE);
             }
 
             // Update charges array and replace them in the vertex shader
@@ -132,7 +135,7 @@ function setup(shaders) {
     });
 
     /*
-    This event handler turn on/off the visualization of stylized charges.
+    This event handler turns on/off the visualization of stylized charges.
 
     Press space to turn on/off
     */
@@ -144,7 +147,14 @@ function setup(shaders) {
 }
 
 /**
- * Sends the charges array and values to the vertex shaders
+ * Sends the charges array and values to the vertex shaders.
+ * 
+ * This function sends:
+ *     - the number of charges to the first program as a uniform int
+ *     - the charges' position as a uniform array of 2D float vectors
+ *     - the charge values as a uniform array of floats
+ * 
+ * Finally, it updates the bBuffer with the new charges' positions for the 2nd program (charge stylization)
  */
 function update_charges() {
     gl.useProgram(program1);
@@ -155,12 +165,12 @@ function update_charges() {
         const uPosition = gl.getUniformLocation(program1, "uPosition["+i+"]");
         gl.uniform2fv(uPosition, MV.flatten(position[i]));
         const uChargeValue = gl.getUniformLocation(program1, "uChargeValue["+i+"]");
-        gl.uniform1f(uChargeValue, chargeValue[i]);
+        gl.uniform1f(uChargeValue, chargeValues[i]);
     }
     
-    let new_charges = new Float32Array(position.length*2 + chargeValue.length);
+    let new_charges = new Float32Array(position.length*2 + chargeValues.length);
     new_charges.set(MV.flatten(position));
-    new_charges.set(chargeValue, position.length*2);
+    new_charges.set(chargeValues, position.length*2);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, bBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new_charges, gl.STATIC_DRAW);
@@ -169,17 +179,23 @@ function update_charges() {
 /*
 Rotates all charges around the center of the canvas.
 */
-function rotate_charges(){
-    for(let i = 0; i < position.length; i++){
-        let distance = Math.sqrt(Math.pow(position[i][0], 2) + Math.pow(position[i][1], 2)); // Distance to center of canvas
+function rotate_charges() {
+    for(let i = 0; i < position.length; i++) {
+        // Distance to center of canvas
+        let distance = Math.sqrt(Math.pow(position[i][0], 2) + Math.pow(position[i][1], 2));
+
+        // Converts the position of the charge to an angle in radians (relative to center (0, 0))
         let alpha = Math.atan2(position[i][1], position[i][0]);
-        if(chargeValue[i] > 0){ 
+
+        if(chargeValues[i] > 0){  // Positive charges rotate counter-clockwise
             alpha += ANGULAR_VELOCITY;
         }
-        else{
+        else { // Negative charges rotate clockwise
             alpha -= ANGULAR_VELOCITY;
         }
-        position[i] = MV.vec2(Math.cos(alpha)* distance, Math.sin(alpha) * distance);
+
+        // Generate the new position for the charge
+        position[i] = MV.vec2(Math.cos(alpha) * distance, Math.sin(alpha) * distance);
     }
     update_charges();
 }
