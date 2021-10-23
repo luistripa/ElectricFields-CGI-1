@@ -144,7 +144,7 @@ function setup(shaders) {
 }
 
 /**
- * Sends the charges array to the vertex shader of program 2.
+ * Sends the charges array and values to the vertex shaders
  */
 function update_charges() {
     gl.useProgram(program1);
@@ -202,7 +202,7 @@ function update_program1(){
     gl.useProgram(program1);
     gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
     let vPosition = gl.getAttribLocation(program1, 'vPosition');
-    gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0); // 3 floats... remmember we use the last coord to distinguish between fixed and movable.
+    gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0); // 3 floats... remember we use the last coord to distinguish between fixed and movable.
     gl.enableVertexAttribArray(vPosition);
 }
 

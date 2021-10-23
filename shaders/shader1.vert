@@ -35,32 +35,34 @@ vec4 colorize(vec2 f){
 
 void main() {
     if (vPosition.z == 1.0) { // Moveable
-
-        vec2 final = vec2(0.0, 0.0);
+        vec2 final_electric_field = vec2(0.0, 0.0);
         for (int i=0; i<MAX_CHARGES; i++) {
-            if (i >= numCharges)
+            if (i >= numCharges) // Don't draw charges if they have exceeded the number of max charges
                 break;
             vec2 charge_position = uPosition[i];
 
-            vec2 vector = vec2(vPosition) - charge_position;
+            vec2 vector = vec2(vPosition) - charge_position; // A vector pointing from the charge to the point
 
-            float norma = sqrt(vector.x*vector.x + vector.y*vector.y);    
+            float modulo = sqrt(vector.x*vector.x + vector.y*vector.y); // The modulo of the vector from above
             
-            vec2 unit_vector = (1.0/norma) * vector;
+            vec2 unit_vector = (1.0/modulo) * vector; // The unit vector from the vector 'vector'
 
-            vec2 electric_field = unit_vector * (KE * uChargeValue[i])/(norma*norma);
+            // Calculates the electical field as a vector using the above unit vector and the electric field expression
+            vec2 electric_field = unit_vector * (KE * uChargeValue[i])/(pow(modulo, 2.0)); 
 
-            final += vec2(electric_field.x, electric_field.y);
+            // Adds the electric field vector to the final electric field vector
+            final_electric_field += vec2(electric_field.x, electric_field.y);
         }
 
-        float normaFinal = sqrt(final.x*final.x + final.y*final.y);
-        if (normaFinal > 0.25) {
-            final = final * 0.25/normaFinal;
+        float final_modulo = sqrt(pow(final_electric_field.x, 2.0) + pow(final_electric_field.y, 2.0));
+        if (final_modulo > 0.25) {
+            final_electric_field = final_electric_field * 0.25/final_modulo;
         }
             
-        glColor = colorize(vec2(final.x, final.y));
-        gl_Position = vec4(vPosition.x + final.x, vPosition.y + final.y, 0.0, 1.0) / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
-    } else {
+        glColor = colorize(final_electric_field);
+        gl_Position = vec4(vPosition.x + final_electric_field.x, vPosition.y + final_electric_field.y, 0.0, 1.0) / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
+    
+    } else { // Fixed 
         glColor = vec4(0.0, 0.0, 0.0, 1.0);
         gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0) / vec4(table_width/2.0, table_height/2.0, 1.0, 1.0);
     }
