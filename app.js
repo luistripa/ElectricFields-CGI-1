@@ -19,38 +19,27 @@ let vertices = [];
 let position = []; // Array que guarda as cargas elétricas
 let chargeValue = [];
 
+let drawCharges = true;
+
 const grid_spacing = 0.05;
 
-function animate(time)
-{
+function animate(time) {
     window.requestAnimationFrame(animate);
     
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     rotate_charges();
 
-    gl.useProgram(program1);
-    gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
-    let vPosition = gl.getAttribLocation(program1, 'vPosition');
-    gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
+    update_program1();
     gl.drawArrays(gl.LINES, 0, vertices.length);
 
-    gl.useProgram(program2);
-    gl.bindBuffer(gl.ARRAY_BUFFER, bBuffer);
-    
-    vPosition = gl.getAttribLocation(program2, "vPosition");
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-
-    let vCharge = gl.getAttribLocation(program2, "vCharge");
-    gl.vertexAttribPointer(vCharge, 1, gl.FLOAT, false, 0, position.length*2*4);
-    gl.enableVertexAttribArray(vCharge);
-    gl.drawArrays(gl.POINTS, 0, position.length);
+    if(drawCharges){
+        update_program2();
+        gl.drawArrays(gl.POINTS, 0, position.length);
+    }
 }
 
-function setup(shaders)
-{
+function setup(shaders) {
     canvas = document.getElementById("gl-canvas");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -74,41 +63,20 @@ function setup(shaders)
     /*
     GRID DRAWING
     */
-    gl.useProgram(program1);
     aBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
+    update_program1();
     gl.bufferData(gl.ARRAY_BUFFER, MV.flatten(vertices), gl.STATIC_DRAW);
 
-    let vPosition = gl.getAttribLocation(program1, 'vPosition');
-    gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-
-    let t_width_position = gl.getUniformLocation(program1, "table_width");
-    let t_height_position = gl.getUniformLocation(program1, "table_height");
-    gl.uniform1f(t_width_position, table_width);
-    gl.uniform1f(t_height_position, table_height);
+    update_table(program1);
 
     /*
     CHARGES DRAWING
     */
-    gl.useProgram(program2);
     bBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bBuffer);
+    update_program2();
     gl.bufferData(gl.ARRAY_BUFFER, MV.flatten(position.concat(chargeValue)), gl.STATIC_DRAW);
-    
-    vPosition = gl.getAttribLocation(program2, "vPosition");
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
 
-    let vCharge = gl.getAttribLocation(program2, "vCharge");
-    gl.vertexAttribPointer(vCharge, 1, gl.FLOAT, false, 0, position.length*2*4);
-    gl.enableVertexAttribArray(vCharge);
-
-
-    t_width_position = gl.getUniformLocation(program2, "table_width");
-    t_height_position = gl.getUniformLocation(program2, "table_height");
-    gl.uniform1f(t_width_position, table_width);
-    gl.uniform1f(t_height_position, table_height);
+    update_table(program2);
 
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -120,20 +88,11 @@ function setup(shaders)
         canvas.height = window.innerHeight;
         table_height = table_width / (canvas.width / canvas.height);
         
-        gl.useProgram(program1);
-        t_width_position = gl.getUniformLocation(program1, "table_width");
-        t_height_position = gl.getUniformLocation(program1, "table_height");
-        gl.uniform1f(t_width_position, table_width);
-        gl.uniform1f(t_height_position, table_height);
-        
-        gl.useProgram(program2);
-        t_width_position = gl.getUniformLocation(program2, "table_width");
-        t_height_position = gl.getUniformLocation(program2, "table_height");
-        gl.uniform1f(t_width_position, table_width);
-        gl.uniform1f(t_height_position, table_height);
+        update_table(program1);
+        update_table(program2);
     
         gl.viewport(0, 0, canvas.width, canvas.height);
-    })
+    });
     
     window.addEventListener("click", function(event) {
         // Start by getting x and y coordinates inside the canvas element
@@ -156,6 +115,12 @@ function setup(shaders)
 
             // Update charges array and replace them in the vertex shader
             update_charges();
+        }
+    });
+
+    window.addEventListener("keydown", function(event){
+        if(event.key == " "){
+            drawCharges = !drawCharges;
         }
     });
 }
@@ -184,20 +149,47 @@ function update_charges() {
 }
 
 function rotate_charges(){
-    let positionUpdate = [];
     for(let i = 0; i < position.length; i++){
         let distance = Math.sqrt(Math.pow(position[i][0], 2) + Math.pow(position[i][1], 2)); //Distancia a origem
         let alpha = Math.atan2(position[i][1], position[i][0]);
-        if(chargeValue[i] > 0){ //Ver isto (esta ao contrario do stor)!!!!
+        if(chargeValue[i] > 0){ 
             alpha += ANGULAR_VELOCITY;
         }
         else{
             alpha -= ANGULAR_VELOCITY;
         }
-        positionUpdate.push(MV.vec2(Math.cos(alpha)* distance, Math.sin(alpha) * distance));
+        position[i] = MV.vec2(Math.cos(alpha)* distance, Math.sin(alpha) * distance);
     }
-    position = positionUpdate;
     update_charges();
+}
+
+function update_table(program){
+    gl.useProgram(program);
+    let t_width_position = gl.getUniformLocation(program, "table_width");
+    let t_height_position = gl.getUniformLocation(program, "table_height");
+    gl.uniform1f(t_width_position, table_width);
+    gl.uniform1f(t_height_position, table_height);
+}
+
+function update_program1(){
+    gl.useProgram(program1);
+    gl.bindBuffer(gl.ARRAY_BUFFER, aBuffer);
+    let vPosition = gl.getAttribLocation(program1, 'vPosition');
+    gl.vertexAttribPointer(vPosition, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+}
+
+function update_program2(){
+    gl.useProgram(program2);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bBuffer);
+    
+    let vPosition = gl.getAttribLocation(program2, "vPosition");
+    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+
+    let vCharge = gl.getAttribLocation(program2, "vCharge");
+    gl.vertexAttribPointer(vCharge, 1, gl.FLOAT, false, 0, position.length*2*4);
+    gl.enableVertexAttribArray(vCharge);
 }
 
 UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag", "shader2.vert", "shader2.frag"]).then(s => setup(s));
