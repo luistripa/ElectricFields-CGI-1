@@ -238,4 +238,4 @@ function update_program2(){
     gl.enableVertexAttribArray(vCharge);
 }
 
-UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag", "shader2.vert", "shader2.frag"]).then(s => setup(s));
+UTILS.loadShadersFromURLS(["shader1.vert", "shader1.frag", "shader2.vert", "shader2.frag"], prefix="Shaders").then(s => setup(s));
