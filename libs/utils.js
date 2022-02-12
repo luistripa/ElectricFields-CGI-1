@@ -102,7 +102,7 @@ async function loadTextFile(url) {
  * @param {*} urls : Array
  * @returns {*} array with all the shaders' sources
  */
- export async function loadShadersFromURLS(urls, prefix="shaders") {
+ export async function loadShadersFromURLS(urls, prefix="Shaders") {
     const res = await Promise.all(
       urls.map(url => loadTextFile(prefix + "/" + url))
     );
