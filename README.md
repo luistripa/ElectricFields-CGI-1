@@ -10,3 +10,8 @@ The program draws a matrix of points in the browser window that will represent a
 
 The user can then `click` (respectively `shift-click`) to place `positive` (respectively `negative`) charges.
 
+You can also use the `space bar` to toggle the charge preview.
+
+## Preview
+
+Use can see this project live at [Github IO](https://luistripa.github.io/ElectricFields-CGI-1/Prjeto01/)
